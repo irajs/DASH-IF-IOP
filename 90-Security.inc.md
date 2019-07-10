@@ -178,30 +178,32 @@ Some DRM systems support live updates to DRM system internal state (e.g. to deli
 
 ## DASH-IF interoperable license request model ## {#CPS-lr-model}
 
-The interactions involved in acquiring licenses and content keys in DRM workflows have historically been proprietary, requiring a DASH client to be customized in order to achieve compatibility with specific DRM systems or license server implementations. DASH-IF defines here an interoperable model to encourage the creation of solutions that do not require custom code in the DASH client in order to play back encrypted content. Use of this model is optional but recommended.
+The interactions involved in acquiring licenses and content keys in DRM workflows have historically been proprietary, requiring a DASH client to be customized in order to achieve compatibility with specific [=DRM systems=] or license server implementations. This chapter defines an interoperable model to encourage the creation of solutions that do not require custom code in the DASH client in order to play back encrypted content. Use of this model is optional but recommended.
 
 Any conformance statements in this chapter apply to clients and services that opt in to using this model (e.g. a "SHALL" statement means "SHALL, if using this model," and has no effect on implementations that choose to use proprietary mechanisms for license acquisition). The authorization service and license server are considered part of the DASH service.
 
 In performing license acquisition, an interoperable DASH client needs to:
 
 1. Be able to prove that the user has the right to use the requested content keys.
-1. Handle errors in a DRM system and license server agnostic manner.
+1. Handle errors in a manner agnostic to the specific [=DRM system=] and license server being used.
 
 This license request model defines a mechanism for achieving both goals. This results in the following interoperability benefits:
 
 * DASH clients can execute DRM workflows without project-specific customization.
-* Custom integration with license servers is limited to backend business logic.
+* Custom code specific to a license server implementation is limited to backend business logic.
 
-These benefits increase in value with the size of the solution, as they reduce the development cost required to offer DRM enabled playback on a wide range of client platforms.
+These benefits increase in value with the size of the solution, as they reduce the development cost required to offer playback of encrypted content on a wide range of DRM-capable client platforms using different [=DRM systems=], with licenses potentially served by different license server implementations.
 
 ### Proof of authorization ### {#CPS-lr-model-authz}
 
-An authorization token is a [[!jwt|JSON Web Token]] used to prove to a license server that the caller has the right to use one or more content keys under certain conditions. Attaching proof of authorization to a license request is optional, allowing for architectures where a "license proxy" performs authorization checks transparently to the DASH client.
+An <dfn>authorization token</dfn> is a [[!jwt|JSON Web Token]] used to prove to a license server that the caller has the right to use one or more content keys under certain conditions. Attaching this proof of authorization to a license request is optional, allowing for architectures where a "license proxy" performs authorization checks transparently to the DASH client.
 
-The structure of the authorization token is defined by the license server vendor, as the token needs to express vendor-specific license server business logic parameters that cannot be generalized. Despite that, note that [[!jwt]] and [[!rfc7515]] specify mandatory fields and processing requirements which must be implemented by authorization token issuers and processors.
+The structure of the [=authorization token=] is defined by the license server implementation, as the [=authorization token=] needs to express implementation-specific license server business logic parameters that cannot be generalized. Note that the [[!jwt]] and [[!rfc7515]] specifications defining the token data structure specify mandatory fields and processing requirements that must be implemented by [=authorization token=] issuers and processors.
+
+An [=authorization token=] is divided into a header and body, though the distinction between the two is effectively irrelevant and merely an artifact of the [[!jwt|JWT specification]] that defines where some general purpose fields are located.
 
 <div class="example">
-JWT headers, specifying digital signature algorithm and expiration time:
+JWT headers, specifying digital signature algorithm and expiration time (general purpose fields):
 
 <xmp highlight="json">
 {
@@ -211,7 +213,7 @@ JWT headers, specifying digital signature algorithm and expiration time:
 }
 </xmp>
 
-JWT body with list of authorized content key IDs:
+JWT body with list of authorized content key IDs (a hypothetical license server specific field):
 
 <xmp highlight="json">
 {
@@ -222,27 +224,37 @@ JWT body with list of authorized content key IDs:
 }
 </xmp>
 
-The above data sets are combined, serialized and digitally signed to arrive at the final form of the authorization token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMjIifQ.eyJhdXRob3JpemVkX2tpZHMiOlsiMTYxMWYwYzgtNDg3Yy00NGQ0LTliMTktODJlNWE2ZDU1MDg0IiwiZGIyZGFlOTctNmI0MS00ZTk5LTgyMTAtNDkzNTAzZDU2ODFiIl19.HJA7CGSEHkU9WtcX0e9IEBzhxwoiRxicnaZ5QW5wEfM`
+The above data sets are serialized and digitally signed to arrive at the final form of the [=authorization token=]: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMjIifQ.eyJhdXRob3JpemVkX2tpZHMiOlsiMTYxMWYwYzgtNDg3Yy00NGQ0LTliMTktODJlNWE2ZDU1MDg0IiwiZGIyZGFlOTctNmI0MS00ZTk5LTgyMTAtNDkzNTAzZDU2ODFiIl19.HJA7CGSEHkU9WtcX0e9IEBzhxwoiRxicnaZ5QW5wEfM`
 </div>
 
-The authorization tokens are issued by an authorization service, which is part of a solution's business logic. The authorization service has access to project-specific context (e.g. the active session, user identification and database of purchases/entitlements) which it uses to make its decisions. A single authorization service can be used to issue authorization tokens for multiple license servers, simplifying architecture in solutions where multiple license server vendors are used.
+[=Authorization tokens=] are issued by an authorization service, which is part of a solution's business logic. The authorization service has access to project-specific context that it needs to make its decisions (e.g. the active session, user identification and database of purchases/entitlements). A single authorization service can be used to issue [=authorization tokens=] for multiple license servers, simplifying architecture in solutions where multiple license server vendors are used.
 
 <figure>
 	<img src="Diagrams/Security/LicenseRequestModel-BaselineArchitecture.png" />
 	<figcaption>Role of the authorization service in DRM workflow related communication.</figcaption>
 </figure>
 
-An authorization service SHALL digitally sign any issued authorization token with an algorithm from the "HMAC with SHA-2 Functions" or "Digital Signature with ECDSA" sets as defined in [[!jwt]]. The HS256 algorithm is recommended as a default choice, as it is a required part of every JWT implementation. License server implementations SHALL validate the digital signature and reject tokens with invalid signatures or tokens using signature algorithms not referenced here.
+An authorization service SHALL digitally sign any issued [=authorization token=] with an algorithm from the "HMAC with SHA-2 Functions" or "Digital Signature with ECDSA" sets as defined in [[!jwt|the JWT specification]]. The HS256 algorithm is recommended as a highly compatible default, as it is a required part of every JWT implementation. License server implementations SHALL validate the digital signature and reject tokens with invalid signatures or tokens using signature algorithms other than those referenced here.
 
 #### Obtaining authorization tokens #### {#CPS-lr-model-authz-requesting}
 
-To obtain an authorization token, a DASH client needs to know the URL of the authorization service. DASH services SHOULD specify the authorization service URL in the MPD using the `dashif:authzurl` element (see [[#CPS-mpd-drm-config]]). If no authorization service URL is provided by the MPD nor by custom business logic or configuration in the DASH client, a DASH client SHALL NOT attach an authorization token to a license request. Absence of this URL implies that authorization operations are performed in a manner transparent to the DASH client (see [[#CPS-lr-model-deployment]]).
+To obtain an [=authorization token=], a DASH client needs to know the URL of the authorization service. DASH services SHOULD specify the authorization service URL in the MPD using the `dashif:authzurl` element (see [[#CPS-mpd-drm-config]]).
 
-DASH clients will use zero or more authorization tokens depending on the number of authorization service URLs defined. One authorization token is requested from each distinct authorization service URL. The authorization service URL is specified individually for each DRM system and content key (i.e. as part of each DRM system specific `ContentProtection` descriptor). Services SHOULD use a single authorization token but MAY divide the scope of authorization tokens if appropriate (e.g. different DRM systems might use different license server vendors that use incompatible license token formats).
+If no authorization service URL is provided by the MPD nor made available at runtime, a DASH client SHALL NOT attach an [=authorization token=] to a license request. Absence of this URL implies that authorization operations are performed in a manner transparent to the DASH client (see [[#CPS-lr-model-deployment]]).
 
-DASH clients MAY cache and reuse authorization tokens up to the moment specified in the token's `exp` "Expiration Time" claim (defaulting to "never expires"). DASH clients SHOULD automatically request a new authorization token if the license server indicates that the authorization token was rejected, even if the "Expiration Time" claim is not present or does not indicate expiration (see [[#CPS-lr-model-errors]]).
+DASH clients will use zero or more [=authorization tokens=] depending on the number of authorization service URLs defined for the set of all selected content keys. One [=authorization token=] is requested from each distinct authorization service URL. The authorization service URL is specified individually for each [=DRM system=] and content key (i.e. it is part of the [=DRM system configuration=] data set). Services SHOULD use a single [=authorization token=] covering all content keys and [=DRM systems=] but MAY divide the scope of [=authorization tokens=] if appropriate (e.g. different [=DRM systems=] might use different license server vendors that use mutually incompatible license token formats).
 
-Before requesting an authorization token, a DASH client SHALL take the authorization service URL and add/replace a `kids` query string parameter containing a comma-separated list of `default_KID` values obtained from the MPD. This list will contain every `default_KID` for which authorization is requested (i.e. every `default_KID` for which the same URL was specified in `dashif:authzurl`). This modified URL will be used for the authorization token request.
+Note: Path or query string parameters in the authorization service URL can be used to differentiate between license server implementations (and their respective [=authorization token=] formats).
+
+DASH clients MAY cache and reuse [=authorization tokens=] up to the moment specified in the token's `exp` "Expiration Time" claim (defaulting to "never expires"). DASH clients SHOULD automatically request a new [=authorization token=] if the license server indicates that the [=authorization token=] was rejected (for any reason), even if the "Expiration Time" claim is not present or does not indicate expiration (see [[#CPS-lr-model-errors]]).
+
+Before requesting an [=authorization token=], a DASH client SHALL take the authorization service URL and add or replace the `kids` query string parameter containing a comma-separated list of `default_KID` values obtained from the MPD. This list SHALL contain every `default_KID` for which proof of authorization is requested from this authorization service (i.e. every distinct `default_KID` for which the same URL was specified in `dashif:authzurl`). This modified URL, containing the `kids` query string parameter, will be used for the [=authorization token=] request.
+
+To request an [=authorization token=], a DASH client SHALL make an HTTP GET request to this URL, attaching to the request any standard contextual information used by the underlying platform and allowed by active security policy (e.g. any active HTTP cookies). This data can be used by the authorization service to identify the user and assess the rights of the user.
+
+Note: For DASH clients operating on a web browser platform, effective use of the authorization service may require the authorization service to exist on the same origin as the website hosting the DASH client in order to permit session cookies to be used.
+
+If the HTTP response status code indicates a successful result and `Content-Type: text/plain`, the HTTP response body is the authorization token.
 
 <div class="example">
 Consider an MPD that specifies the authorization service URL `https://example.com/Authorize` for the content keys with `default_KID` values `1611f0c8-487c-44d4-9b19-82e5a6d55084` and `db2dae97-6b41-4e99-8210-493503d5681b`.
@@ -264,17 +276,15 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMjIifQ.eyJhdXRob3JpemVkX
 </xmp>
 </div>
 
-To request an authorization token, a DASH client SHALL make an HTTP GET request to the above URL, attaching to the request any contextual information that is allowed by active security policy (e.g. session cookies, device identifiers). This data will be used by the authorization service to identify the user and assess the rights of the user. DASH clients SHALL follow HTTP redirects signaled by the authorization service.
+If the HTTP response status code indicates a failure, a DASH client needs to examine the response to determine the cause of the failure and handle it appropriately (see [[#CPS-lr-model-errors]]). DASH clients SHOULD NOT treat every failed [=authorization token=] request as a fatal error - if multiple [=authorization tokens=] are used to authorize access to different content keys, it may be that some of them fail but others succeed, potentially still enabling a successful playback experience. The examination of whether playback can successfully proceed SHOULD be performed only once all license requests have been completed and the final set of available content keys is known. See also [[#CPS-unavailable-keys]].
 
-Note: For DASH clients operating on a web browser platform, this may require the authorization service to exist on the same origin as the website hosting the DASH client, in order to make the session cookies available.
-
-If the HTTP response status code indicates a successful result and `Content-Type: text/plain`, the HTTP response body is the authorization token. If the HTTP response status code indicates a failure, examine the response to determine the cause of the failure and handle it appropriately (see [[#CPS-lr-model-errors]]). DASH clients SHOULD NOT treat every failed authorization token request as a fatal error - if multiple authorization tokens are used to authorize access to different content keys, it may be that some of them fail but others succeed, potentially still enabling a successful playback experience. The examination of whether playback can successfully proceed SHOULD be performed only once all license requests have been completed and the final set of available content keys is known. See also [[#CPS-unavailable-keys]].
+DASH clients SHALL follow HTTP redirects signaled by the authorization service.
 
 #### Issuing authorization tokens #### {#CPS-lr-model-authz-issuing}
 
 The mechanism of performing authorization checks is implementation-specific. Common approaches might be to identify the user from a session cookie, query the entitlements/purchases database to identify what rights are assigned to the user and then assemble a suitable authorization token, taking into account the license policy configuration that applies to the content keys being requested.
 
-The structure of the authorization tokens is largely unconstrained. Authorization services need to issue tokens that match the expectations of license servers that will be using these tokens. If multiple different license server implementations are served by the same authorization service, the path or query string parameters in the authorization service URL allow the service to identify which output format to use.
+The structure of the [=authorization tokens=] is unconstrained beyond the basic requirements defined in [[#CPS-lr-model-authz]]. Authorization services need to issue tokens that match the expectations of license servers that will be using these tokens. If multiple different license server implementations are served by the same authorization service, the path or query string parameters in the authorization service URL allow the service to identify which output format to use.
 
 <div class="example">
 Example authorization token matching the requirements of a hypothetical license server.
@@ -303,18 +313,18 @@ JWT body with list of authorized content key IDs:
 Serialized and digitally signed: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMjIifQ.eyJhdXRob3JpemVkX2tpZHMiOlsiMTYxMWYwYzgtNDg3Yy00NGQ0LTliMTktODJlNWE2ZDU1MDg0IiwiZGIyZGFlOTctNmI0MS00ZTk5LTgyMTAtNDkzNTAzZDU2ODFiIl19.HJA7CGSEHkU9WtcX0e9IEBzhxwoiRxicnaZ5QW5wEfM`
 </div>
 
-An authorization service SHALL NOT issue authorization tokens that authorize the use of content keys that are not in the set of requested content keys (as defined in the request's `kids` query string parameter). An authorization service MAY issue authorization tokens that authorize the use of only a subset of the requested content keys, provided that at least one content key is authorized.
+An authorization service SHALL NOT issue [=authorization tokens=] that authorize the use of content keys that are not in the set of requested content keys (as defined in the request's `kids` query string parameter). An authorization service MAY issue [=authorization tokens=] that authorize the use of only a subset of the requested content keys, provided that at least one content key is authorized. If no content keys are authorized for use, an authorization service SHALL [[#CPS-lr-model-errors|signal a failure]].
 
-Note: The license server may further constrain the set of available content keys (e.g. as a result of examining the device's security level). See also [[#CPS-unavailable-keys]].
+Note: During license issuance, the license server may further constrain the set of available content keys (e.g. as a result of examining the device's security level). See [[#CPS-unavailable-keys]].
 
-Authorization tokens SHALL be returned by an authorization service using [[!rfc7515|JWS Compact Serialization]] (the `aaa.bbb.ccc` format). The serialized form of an authorization token SHOULD NOT exceed 5000 bytes to ensure that a license server does not reject a license request carrying the token due to excessive header size.
+[=Authorization tokens=] SHALL be returned by an authorization service using [[!rfc7515|JWS Compact Serialization]] (the `aaa.bbb.ccc` format). The serialized form of an [=authorization token=] SHOULD NOT exceed 5000 bytes to ensure that a license server does not reject a license request carrying the token due to excessive header size.
 
 #### Attaching authorization tokens to license requests #### {#CPS-lr-model-authz-using}
 
-Authorization tokens are attached to license requests using the `Authorization` HTTP request header, signaling the `Bearer` authorization type.
+[=Authorization tokens=] are attached to license requests using the `Authorization` HTTP request header, signaling the `Bearer` authorization type.
 
 <div class="example">
-HTTP request to a license server, carrying an authorization token.
+HTTP request to a hypothetical license server, carrying an [=authorization token=].
 
 <xmp>
 POST /AcquireLicense HTTP/1.1
@@ -324,9 +334,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMj
 </xmp>
 </div>
 
-The same authorization token may be used with multiple license requests but one license request can only carry one authorization token, even if the license request is for multiple content keys.
+The same [=authorization token=] may be used with multiple license requests but one license request can only carry one [=authorization token=], even if the license request is for multiple content keys.
 
-A DASH client SHALL NOT make license requests for content keys that are configured as requiring an authorization token (e.g. by the presence of `dashif:authzurl` in the MPD) but for which the DASH client has failed to acquire an authorization token.
+A DASH client SHALL NOT make license requests for content keys that are configured as requiring an [=authorization token=] (e.g. by the presence of `dashif:authzurl` in the MPD) but for which the DASH client has failed to acquire an [=authorization token=].
 
 ### Problem signaling and handling ### {#CPS-lr-model-errors}
 
@@ -337,7 +347,7 @@ Authorization services and license servers SHOULD indicate an inability to satis
 1. Contains a HTTP response body conforming to [[!rfc7807]].
 
 <div class="example">
-HTTP response from an authorization service, indicating a rejected authorization token request because the requested content is not a part of the user's subscriptions.
+HTTP response from an authorization service, indicating a rejected [=authorization token=] request because the requested content is not a part of the user's subscriptions.
 
 <xmp highlight="json">
 HTTP/1.1 403 Forbidden
@@ -391,7 +401,7 @@ This problem record SHOULD be returned by a license server if the proof of autho
 
 Note: If the authorization token authorizes only a subset of requested keys, a license server should not signal a problem and simply return only the authorized subset.
 
-When encountering this problem, a DASH client SHOULD discard whatever authorization token was used, acquire a new authorization token and retry the license request. If no authorization service URL is available, this indicates a DASH service or client misconfiguration (as clearly, an authorization token was expected) and the problem SHOULD be escalated for operator attention.
+When encountering this problem, a DASH client SHOULD discard whatever authorization token was used, acquire a new [=authorization token=] and retry the license request. If no authorization service URL is available, this indicates a DASH service or client misconfiguration (as clearly, an [=authorization token=] was expected) and the problem SHOULD be escalated for operator attention.
 
 ### Possible deployment architectures ### {#CPS-lr-model-deployment}
 
@@ -455,10 +465,6 @@ To present encrypted content a DASH client needs to:
     * During activation, [[#CPS-license-request-workflow|acquire any missing content keys and the licenses that govern their use]].
 
 This chapter defines the recommended DASH client workflows for interacting with DRM systems in these aspects. It is assumed that the platform implements an API similar to [[encrypted-media|W3C Encrypted Media Extensions (EME)]].
-
-It is possible that not all of the encrypted [=adaptation sets=] selected for playback can actually be played back (e.g. because a content key for ultra-HD content is only authorized for use on high-security devices). Whether this is an error condition that should prevent playback is a business logic decision that is not prescribed by this document.
-
-The set of available content keys may change over time (e.g. due to license expiration or due to new [=periods=] in the presentation requiring different content keys). A DASH client SHALL monitor the set of `default_KID` values that are required for playback and either request the DRM system to make these content keys available or deselect the affected [=adaptation sets=] when the content keys become unavailable. Conceptually, any such change can be handled by re-executing the DRM system selection and activation workflows, although platform APIs may also offer more fine-grained update capabilities.
 
 ### Selecting the DRM system ### {#CPS-selection-workflow}
 
@@ -567,9 +573,13 @@ For historical reasons, platform APIs often implement DRM system activation as a
 
 Note: The batching may, for example, be accomplished by concatenating all the `pssh` boxes for the different content keys. Support for this type of batching among DRM systems and platform APIs remains uncommon, despite the potential efficiency gains from reducing the number of license requests triggered.
 
-#### Effects of content key unavailability on playback #### {#CPS-unavailable-keys}
+#### Handling unavailability of content keys #### {#CPS-unavailable-keys}
 
-While a DASH client can request a DRM system to decrypt any set of content keys, as long as it has the [=DRM system configuration=], this is only a request and it can be denied at multiple stages of processing by different involved entities.
+It is possible that not all of the encrypted [=adaptation sets=] selected for playback can actually be played back (e.g. because a content key for ultra-HD content is only authorized for use on high-security devices). The unavailability of one or more content keys SHOULD NOT be considered a fatal error condition as long as at least one audio and at least one video [=adaptation set=] remains available for playback (assuming both content types are selected for playback to begin with). This logic MAY be overridden by solution specific business logic to better reflect end-user expectations under given conditions.
+
+The set of available content keys can change over time (e.g. due to license expiration or due to new [=periods=] in the presentation requiring different content keys). A DASH client SHALL monitor the set of `default_KID` values that are required for playback and either request the DRM system to make these content keys available or deselect the affected [=adaptation sets=] when the content keys become unavailable. Conceptually, any such change can be handled by re-executing the [[#CPS-selection-workflow|DRM system selection]] and [[#CPS-activation-workflow|activation workflows]], although platform APIs may also offer more fine-grained update capabilities.
+
+A DASH client can request a DRM system to decrypt any set of content keys (if it has the necessary [=DRM system configuration=]). However, this is only a request and it can be denied at multiple stages of processing by different involved entities.
 
 <figure>
 	<img src="Diagrams/Security/ReductionOfKeys.png" />
