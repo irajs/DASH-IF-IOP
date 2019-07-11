@@ -56,7 +56,7 @@ Note: This means that if [=representations=] use different content keys, they mu
 
 The structure of content protection related information in the CMAF containers used by DASH is largely specified by [[!MPEGCMAF]] and [[!MPEGCENC]]. This chapter outlines some additional requirements to ensure interoperable behavior of DASH clients and services.
 
-[=Initialization segments=] SHOULD NOT contain any `moov/pssh` box and DASH clients SHOULD ignore such boxes when encountered. Instead, `pssh` boxes required for [=DRM system=] initialization are part of the [=DRM system configuration=] and SHOULD be placed in the MPD as `cenc:pssh` elements in [=DRM system=] specific `ContentProtection` descriptors (see [[#CPS-mpd-drm-config]]).
+[=Initialization segments=] SHOULD NOT contain any `moov/pssh` box and DASH clients MAY ignore such boxes when encountered. Instead, `pssh` boxes required for [=DRM system=] initialization are part of the [=DRM system configuration=] and SHOULD be placed in the MPD as `cenc:pssh` elements in [=DRM system=] specific `ContentProtection` descriptors (see [[#CPS-mpd-drm-config]]).
 
 Note: Placing the `pssh` boxes in the MPD has become common for purposes of operational agility - it is often easier to update MPD files than rewrite initialization segments when the default [=DRM system configuration=] needs to be updated. Furthermore, in some scenarios the appropriate set of `pssh` boxes is not known when the [=initialization segment=] is created.
 
