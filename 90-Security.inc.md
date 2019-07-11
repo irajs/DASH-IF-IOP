@@ -650,7 +650,7 @@ To process license requests queued during execution of the [[#CPS-activation-wor
     1. Create a comma-separated list from <var>kids</var> in ascending alphanumeric order.
     1. Let <var>authz_url_with_kids</var> be <var>authz_url</var> with an additional query string parameter named `kids` with the value from <var>kids</var>.
         * <var>authz_url</var> may already incldue query string parameters, which should be preserved!
-    1. If the DASH client does has a cached [=authorization token=] previously acquired from <var>authz_url_with_kids</var> that still remains valid:
+    1. If the DASH client has a cached [=authorization token=] previously acquired from <var>authz_url_with_kids</var> that still remains valid:
         1. Let <var>authz_token</var> be the cached [=authorization token=].
     1. Else:
         1. Perform an HTTP GET request to <var>authz_url_with_kids</var> (following redirects).
@@ -664,13 +664,13 @@ To process license requests queued during execution of the [[#CPS-activation-wor
     1. Execute an HTTP POST request with the following parameters:
         * Request body is the license request body from <var>request</var>.
         * Request URL is defined by [=DRM system configuration=].
-        * If <var>authz_tokens</var> contains an entry with the key being the `default_KID` from <var>request</var>, add the `Authorization` header with the value being the string `Bearer ` concatenated with the entry value from <var>authz_tokens</var> (e.g. `Bearer aaa.bbb.ccc`).
+        * If <var>authz_tokens</var> contains an entry with the key being the `default_KID` from <var>request</var>, add the `Authorization` header with the value being the string `Bearer` concatenated with a space and the [=authorization token=] from <var>authz_tokens</var> (e.g. `Bearer aaa.bbb.ccc`).
     1. If the response status code [[#CPS-lr-model-errors|indicates failure]]:
         1. Expel the used [=authorization token=] (if any) from the DASH client cache to force a new token to be used for any future license requests.
-        1. If the DASH client believes that a retry might succeed (e.g. because the response indicates that the error might be transient or due to an expired [=authorization token=]), add <var>request</var> to <var>retry_requests</var>.
+        1. If the DASH client believes that retrying the license request might succeed (e.g. because the response indicates that the error might be transient or due to an expired [=authorization token=] that can be renewed), add <var>request</var> to <var>retry_requests</var>.
         1. Make a note of any error information for later processing and presentation to the user.
         1. Skip to the next loop iteration.
-    1. Supply the HTTP response body to the [=DRM system=] for processing.
+    1. Submit the HTTP response body to the [=DRM system=] for processing.
         * This may cause the [=DRM system=] to trigger additional license requests. Append any triggered request to <var>pending_license_requests</var> and copy the [=DRM system configuration=] from the current entry, processing the additional entry in a future iteration of the same loop.
         * If the [=DRM system=] indicates a failure to process the data, make a note of any error information for later processing and skip to the next loop iteration.
 1. If <var>retry_requests</var> is not empty, re-execute this workflow with <var>retry_requests</var> as the input.
