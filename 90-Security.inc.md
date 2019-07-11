@@ -770,43 +770,23 @@ Issue: To be completed. Look at encryption: Key available for license server “
 
 ### Use of W3C Clear Key with DASH ### {#CPS-AdditionalConstraints-W3C}
 
-When using W3C Clear Key key system with DASH [[!encrypted-media]], Clear Key related signaling is included in the MPD with a `ContentProtection` element that has the following format.
+Clear Key is a [=DRM system=] defined by W3C in [[!encrypted-media]]. It is intended primarily for client and media platform development/test purposes and does not perform the content protection and content key protection duties ordinarily expected from a [=DRM system=]. Nevertheless, in DASH client DRM workflows, it is equivalent to a real [=DRM system=].
 
-The Clear Key `ContentProtection` element attributes SHALL take the following values:
+A DRM system specific `ContentProtection` element for Clear Key SHALL use the system ID `e2719d58-a985-b3c9-781a-b030af78d30e` and `value="ClearKey1.0"`.
 
-* The UUID e2719d58-a985-b3c9-781a-b030af78d30e is used for the `@schemeIdUri` attribute.
-* The `@value` attribute is equal to the string “ClearKey1.0”
+The `dashif:laurl:` element SHOULD be used to indicate the license server URL. Legacy content MAY also use an equivalent `Laurl` element from the `http://dashif.org/guidelines/clearKey` namespace, as this was defined in previous versions of this document.
 
-The following element MAY be added under the `ContentProtection` element:
-
-* A `Laurl` element that contains the URL for a Clear Key license server allowing to receive a Clear Key license in the format defined in [[!encrypted-media]] section 9.1.4. It has the attribute `@Lic_type` that is a string describing the license type served by this license server. Possible value is “EME-1.0” when the license served by the Clear Key license server is in the format defined in [[!encrypted-media]] section 9.1.4.
-
-The name space for the `Laurl` element is `http://dashif.org/guidelines/clearKey`
-
-An example of a Clear Key `ContentProtection` element is as follows
-
-```xml
-<xs:schema xmlns:ck=http://dashif.org/guidelines/clearKey>
-<ContentProtection
-  schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
-  value="ClearKey1.0">
-  <ck:Laurl Lic_type="EME-1.0">
-    https://clearKeyServer.foocompany.com
-  </ck:Laurl>
-</ContentProtection>
-```
-
-W3C also specifies the use of the DRM systemID=”1077efec-c0b2-4d02-ace3-3c1e52e2fb4b” in [[!eme-initdata-cenc]] section 4 to indicate that tracks are encrypted with Common Encryption [[!MPEGCENC]], and list the `KID` of content keys used to encrypt the track in a version 1 `pssh` box with that DRM systemID.  However, the presence of this Common `pssh` box does not indicate whether content keys are managed by DRM systems or Clear Key management specified in this section. Browsers are expected to provide decryption in the case where Clear Key management is used, and a DRM system where a DRM key management system is used. Therefore, clients SHALL NOT rely on the signalling of DRM systemID 1077efec-c0b2-4d02-ace3-3c1e52e2fb4b as an indication that the Clear Key mechanism is to be used.
+W3C also describes the use of the system ID `1077efec-c0b2-4d02-ace3-3c1e52e2fb4b` in [[!eme-initdata-cenc]] section 4 to indicate that tracks are encrypted with [[!MPEGCENC|Common Encryption]]. However, the presence of this "common" `pssh` box does not imply that Clear Key is to be used for decryption. DASH clients SHALL NOT interpret a `pssh` box with the system ID `1077efec-c0b2-4d02-ace3-3c1e52e2fb4b` as an indication that the Clear Key mechanism is to be used (nor as an indication of anything else beyond the use of Common Encryption).
 
 W3C specifies that in order to activate the Clear Key mechanism, the client must provide Clear Key initialization data to the browser. The Clear Key initialization data consists of a listing of the default KIDs required to decrypt the content.
 
-The MPD SHOULD NOT contain Clear Key initialization data. Instead, clients SHALL construct Clear Key initialization data at runtime, based on the default KIDs signaled in the MPD using `ContentProtection` elements with the urn:mpeg:dash:mp4protection:2011 scheme.
+The MPD SHOULD NOT contain Clear Key initialization data. Instead, clients SHALL construct Clear Key initialization data at runtime, based on the set of `default_KID` values to be used for content decryption.
 
-When requesting a Clear Key license to the license server, it is recommended to use a secure connection as described in Section [[#CPS-HTTPS]].
+When requesting a Clear Key license to the license server, a DASH client SHOULD use HTTPS as described in Section [[#CPS-HTTPS]].
 
-When used with a license type equal to “EME-1.0”:
+When performing a license request for Clear Key:
 
 * The GET request for the license includes in the body the JSON license request format defined in [[!encrypted-media]] section 9.1.3. The license request MAY also include additional authentication elements such as access token, device or user ID.
-* The response from the license server includes in the body the Clear Key license in the format defined in [[!encrypted-media]] section 9.1.4 if the device is entitled to receive the Content Keys.
+* A successful response from the license server includes in the body the Clear Key license in the format defined in [[!encrypted-media]] section 9.1.4.
 
-It should be noted that clients receiving content keys through the Clear Key key system may not have the same robustness that typical DRM clients are required to have. When the same content keys are distributed to DRM clients and to weakly-protected or unprotected clients, the weakly-protected or unprotected clients become a weak link in the system and limits the security of the overall system.
+It should be noted that clients receiving content keys through the Clear Key key system will not have the same robustness that typical DRM clients are required to have. When the same content keys are distributed to DRM clients and to weakly-protected or unprotected clients, the weakly-protected or unprotected clients become a weak link in the system and limits the security of the overall system.
