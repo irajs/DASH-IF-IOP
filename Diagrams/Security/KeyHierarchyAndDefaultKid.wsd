@@ -20,7 +20,7 @@ package "CMAF" {
     [sgpd]
 }
 
-[tenc] <- DKID
+[tenc] -> Root
 [sgpd] -up-> A
 [sgpd] -up-> B
 [sgpd] -up-> C

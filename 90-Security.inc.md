@@ -42,9 +42,9 @@ While using HTTPS in DASH provides good protection for data exchanged between DA
 
 A DASH service MAY offer some or all [=adaptation sets=] in encrypted form, requiring the use of a <dfn>DRM system</dfn> to decrypt the content for playback. The duty of a DRM system is to decrypt content while preventing disclosure of the content key and misuse of the decrypted content (e.g. recording via screen capture).
 
-Encrypted DASH content SHALL use either the `cenc` or the `cbcs` <dfn>protection scheme</dfn> defined in [[!MPEGCENC]]. [=Representations=] in the same [=adaptation set=] SHALL use the same protection scheme. Content in different [=adaptation sets=] MAY use different protection schemes.
+Encrypted DASH content SHALL use either the `cenc` or the `cbcs` <dfn>protection scheme</dfn> defined in [[!MPEGCENC]]. [=Representations=] in the same [=adaptation set=] SHALL use the same [=protection scheme=]. Content in different [=adaptation sets=] MAY use different [=protection schemes=].
 
-`cenc` and `cbcs` are two mutually exclusive encryption modes. DASH content encrypted according to the `cenc` protection scheme cannot be decrypted by a DRM system supporting only the `cbcs` protection scheme and vice versa.
+`cenc` and `cbcs` are two mutually exclusive [=protection schemes=]. DASH content encrypted according to the `cenc` [=protection scheme=] cannot be decrypted by a DRM system supporting only the `cbcs` [=protection scheme=] and vice versa.
 
 Note: Some modern DRM systems support both schemes. Even when this is the case, clients should not assume concurrent use is possible.
 
@@ -58,34 +58,34 @@ The structure of content protection related information in the CMAF containers u
 
 [=Initialization segments=] SHOULD NOT contain any `moov/pssh` box and DASH clients MAY ignore such boxes when encountered. Instead, `pssh` boxes required for [=DRM system=] initialization are part of the [=DRM system configuration=] and SHOULD be placed in the MPD as `cenc:pssh` elements in [=DRM system=] specific `ContentProtection` descriptors (see [[#CPS-mpd-drm-config]]).
 
-Note: Placing the `pssh` boxes in the MPD has become common for purposes of operational agility - it is often easier to update MPD files than rewrite initialization segments when the default [=DRM system configuration=] needs to be updated. Furthermore, in some scenarios the appropriate set of `pssh` boxes is not known when the [=initialization segment=] is created.
+Note: Placing the `pssh` boxes in the MPD has become common for purposes of operational agility - it is often easier to update MPD files than rewrite [=initialization segments=] when the default [=DRM system configuration=] needs to be updated. Furthermore, in some scenarios the appropriate set of `pssh` boxes is not known when the [=initialization segment=] is created.
 
-Media segments MAY contain `moof/pssh` boxes to provide updates to [=DRM system=] internal state (e.g. to supply new leaf keys in a key hierarchy). These state updates are transparent to the DASH client. See [[#CPS-default_KID-hierarchy]] for an example.
+Media segments MAY contain `moof/pssh` boxes to provide updates to [=DRM system=] internal state (e.g. to supply new leaf keys in a key hierarchy). These state updates are transparent to the DASH client - the media platform is expected to intercept the `moof/pssh` boxes and supply them directly to the active [=DRM system=]. See [[#CPS-default_KID-hierarchy]] for an example.
 
 ## Encryption and DRM signaling in the MPD ## {#CPS-mpd}
 
-A DASH client needs to recognize encrypted content and to activate a suitable [=DRM system=], configuring it to decrypt content. The MPD informs a DASH client of the protection scheme used to protect content, identifies the content keys that are used and optionally provides the default [=DRM system configuration=] for a set of [=DRM systems=].
+A DASH client needs to recognize encrypted content and to activate a suitable [=DRM system=], configuring it to decrypt content. The MPD informs a DASH client of the [=protection scheme=] used to protect content, identifies the content keys that are used and optionally provides the default [=DRM system configuration=] for a set of [=DRM systems=].
 
 The <dfn>DRM system configuration</dfn> is the complete data set required for a DASH client to activate a single [=DRM system=] and configure it to decrypt content using a single content key. **It is supplied by a combination of XML elements in the MPD and/or data sources available to a DASH client at runtime**. The [=DRM system configuration=] often contains:
 
 * DRM system initialization data in the form of a DRM system specific `pssh` box (as defined in [[!ISOBMFF]]).
 * DRM system initialization data in some other DRM system specific form (e.g. `keyids` JSON structure used by [[#CPS-AdditionalConstraints-W3C|W3C Clear Key]])
-* The used Common Encryption scheme (`cenc` or `cbcs`)
+* The used [=protection scheme=] (`cenc` or `cbcs`)
 * `default_KID` that identifies the content key
 * License server URL
 * [[#CPS-lr-model|Authorization service URL]]
 
-The exact set of values required depends on the DRM system (e.g. what kind of initialization data is required) and what mechanism for content key acquisition is used (e.g. [[#CPS-lr-model|the interoperable license request model]]).
+The exact set of values required for successful DRM workflow execution depends on the requirements of the selected DRM system (e.g. what kind of initialization data it can accept) and the mechanism used for content key acquisition (e.g. [[#CPS-lr-model|the DASH-IF interoperable license request model]]). By default, a DASH client SHOULD assume that a [=DRM system=] accepts initialization data in `pssh` format and that [[#CPS-lr-model|the DASH-IF interoperable license request model]] is used for content key acquisition.
 
 When configuring a [=DRM system=] to decrypt content using multiple content keys, a distinct [=DRM system configuration=] is associated with each content key. Concurrent use of multiple [=DRM systems=] is not considered an interoperable scenario.
 
-Note: In principle, it is possible for the DRM system initialization data to be the same for different content keys. In practice, the `default_KID` is often included in the initialization data so this is unlikely. Nevertheless, DASH clients cannot assume that using equal initialization data implies anything about equality of the DRM system configuration or the content key.
+Note: In principle, it is possible for the DRM system initialization data to be the same for different content keys. In practice, the `default_KID` is often included in the initialization data so this is unlikely. Nevertheless, DASH clients cannot assume that using equal initialization data implies anything about equality of the [=DRM system configuration=] or the content key - the `default_KID` is always the distinguishing factor. See [[#CPS-default_KID]].
 
 ### Protection scheme signaling ### {#CPS-mpd-scheme}
 
 The presence of a `ContentProtection` descriptor with `schemeIdUri="urn:mpeg:dash:mp4protection:2011"` on an [=adaptation set=] informs a DASH client that all [=representations=] in the [=adaptation set=] are encrypted in conformance to Common Encryption and require a [=DRM system=] to provide access. See [[!MPEGDASH]] for the definition of this descriptor.
 
-This descriptor SHALL be present for encrypted [=adaptation sets=]. The `value` attribute SHALL be either `cenc` or `cbcs`, matching the used protection scheme. The `cenc:default_KID` attribute SHALL be present and have a value matching the `default_KID` in the `tenc` box, expressed in UUID string notation.
+This descriptor SHALL be present for encrypted [=adaptation sets=]. The `value` attribute SHALL be either `cenc` or `cbcs`, matching the used [=protection scheme=]. The `cenc:default_KID` attribute SHALL be present and have a value matching the `default_KID` in the `tenc` box, expressed in lowercase UUID string notation.
 
 Note: This document uses the `cenc:` prefix to reference the XML namespace `urn:mpeg:cenc:2013` defined in [[!MPEGCENC]].
 
@@ -100,33 +100,27 @@ Signaling an [=adaptation set=] encrypted using the `cbcs` scheme and with a key
 </xmp>
 </div>
 
-### Default DRM system configuration ### {#CPS-mpd-drm-config}
+### Providing default DRM system configuration ### {#CPS-mpd-drm-config}
 
-A DASH service SHOULD supply a default [=DRM system configuration=] in the MPD for all supported [=DRM systems=] and all content keys. This enables playback without the need for DASH client customization or additional configuration. Alternatively, this data may be supplied by custom business logic executed at runtime (e.g. to load the values from configuration files or orthogonal data sources).
+A DASH service SHOULD supply a default [=DRM system configuration=] in the MPD for all supported [=DRM systems=] in all encrypted [=adaptation sets=]. This enables playback without the need for DASH client customization or additional configuration. [=DRM system configuration=] MAY also be supplied or enhanced/replaced by logic executed at runtime (e.g. to load the values from configuration files or other data sources).
 
-Any number of `ContentProtection` descriptors MAY be present in the MPD on the [=adaptation set=] level to provide [=DRM system configuration=]. The contents of these descriptors MAY be ignored by the DASH client if overridden by custom business logic or runtime data sources - the [=DRM system configuration=] in the MPD simply provides default values known at content authoring time. Each DRM system specific `ContentProtection` descriptor can contain a mix of XML elements and attributes defined by [[!MPEGCENC|Common Encryption]], the [=DRM system=] author, DASH-IF or any other party.
+Any number of `ContentProtection` descriptors MAY be present in the MPD on the [=adaptation set=] level to provide [=DRM system configuration=]. The contents of these descriptors MAY be ignored by the DASH client if overridden by custom business logic or runtime data sources - the [=DRM system configuration=] in the MPD simply provides default values known at content authoring time.
 
-If a DRM system specific `ContentProtection` descriptor contains the same data in multiple forms then the more generic form SHALL have precedence (e.g. if the license server URL is defined both using `dashif:laurl` and a DRM system specific element, the former is used by DASH clients).
+A `ContentProtection` element providing a default [=DRM system configuration=] SHALL use the attribute `schemeIdUri="urn:uuid:<systemid>"` to identify the [=DRM system=], with the `<systemid>` matching a value in the [DASH-IF system-specific identifier registry](https://dashif.org/identifiers/content_protection/). The `value` attribute of the `ContentProtection` element SHOULD contain the DRM system name and version number in a human readable form (for diagnostic purposes).
 
-A `ContentProtection` element providing default [=DRM system configuration=] SHALL have the attribute `schemeIdUri="urn:uuid:<systemid>"` that identifies the DRM system, with the `<systemid>` matching a value in the [DASH-IF system-specific identifier registry](https://dashif.org/identifiers/content_protection/). The `value` attribute of the `ContentProtection` element SHOULD contain the DRM system name and version number in a human readable form (for diagnostic purposes).
+Note: W3C defines the Clear Key mechanism, which is a "dummy" DRM system implementation intended for client and platform development/testing purposes. **Understand that Clear Key does not fulfill the content protection and content key protection duties ordinarily expected from a DRM system.** For more guidelines on Clear Key usage, see [[#CPS-AdditionalConstraints-W3C]].
 
-Note: W3C defines the Clear Key mechanism, which is a "dummy" DRM system implementation intended for client and platform development/testing purposes. **Understand that Clear Key does not fulfill the content and content key protection duties ordinarily expected from a DRM system.** For more guidelines on Clear Key usage, see [[#CPS-AdditionalConstraints-W3C]].
+Each DRM system specific `ContentProtection` descriptor can contain a mix of XML elements and attributes defined by [[!MPEGCENC|Common Encryption]], the [=DRM system=] author, DASH-IF or any other party. If a DRM system specific `ContentProtection` descriptor contains the same data in multiple forms then the more generic form SHALL have precedence (e.g. if the license server URL is defined both using `dashif:laurl` and a DRM system specific element, the former is used by DASH clients).
 
-For [=DRM systems=] initialized by supplying `pssh` boxes (as defined in [[!ISOBMFF]]), the `cenc:pssh` element SHOULD be present under the `ContentProtection` descriptor if the value is known at MPD authoring time. The base64 encoded contents of the element SHALL be equivalent to a `pssh` box including its header.
+For [=DRM systems=] initialized by supplying `pssh` boxes (as defined in [[!ISOBMFF]]), the `cenc:pssh` element SHOULD be present under the `ContentProtection` descriptor if the value is known at MPD authoring time. The base64 encoded contents of the element SHALL be equivalent to a `pssh` box including its header. See also [[#CPS-cmaf]].
 
 Note: The namespace prefix `dashif:` in this document refers to the XML namespace `https://dashif.org/`.
 
-[=DRM systems=] generally use the concept of license requests as the mechanism for obtaining content keys and associated usage policy (see [[#CPS-license-request-workflow]]). For [=DRM systems=] that use this concept, exactly one `dashif:laurl` element SHOULD be present under the `ContentProtection` descriptor, with the value of the element being the default URL to send license requests to. This URL MAY contain [[#CPS-lr-model-contentid|content identifiers]].
+[=DRM systems=] generally use the concept of license requests as the mechanism for obtaining content keys and associated usage constraints (see [[#CPS-license-request-workflow]]). For [=DRM systems=] that use this concept, exactly one `dashif:laurl` element SHOULD be present under the `ContentProtection` descriptor, with the value of the element being the default URL to send license requests to. This URL MAY contain [[#CPS-lr-model-contentid|content identifiers]].
 
 For [=DRM systems=] that require proof of authorization to be attached to the license request in a manner conforming to [[#CPS-lr-model]], exactly one `dashif:authzurl` element SHOULD be present under the `ContentProtection` descriptor, containing the default URL to send authorization requests to (see [[#CPS-license-request-workflow]]).
 
 Issue: Allow multiple URLs for failover? If yes, should be aligned with `<Location>` and `<BaseUrl>` logic where multiple URLs are also accepted. Should also make recommendations for failover logic in that case.
-
-[=DRM system=] specific `ContentProtection` elements that do not provide any [=DRM system configuration=] SHOULD NOT be present in an MPD and MAY be ignored by DASH clients.
-
-The contents of DRM system specific `ContentProtection` elements with the same `@schemeIdUri` SHALL be identical in all [=adaptation sets=] with the same `default_KID`. This means that a [=DRM system=] will treat equally all [=adaptation sets=] that use the same content key.
-
-Note: If you wish to change the default [=DRM system configuration=] associated with a content key, you must update all the instances where the data is present in the MPD. For live services, this can mean updating the data in multiple [=periods=].
 
 <div class="example">
 A `ContentProtection` descriptor that provides default [=DRM system configuration=] for a fictional [=DRM system=].
@@ -142,24 +136,30 @@ A `ContentProtection` descriptor that provides default [=DRM system configuratio
 </xmp>
 </div>
 
-### default_KID defines is the contract for DRM system interactions ### {#CPS-default_KID}
+[=DRM system=] specific `ContentProtection` elements that do not provide any [=DRM system configuration=] SHOULD NOT be present in an MPD and MAY be ignored by DASH clients. The presence of a [=DRM system=] specific `ContentProtection` element is not required in order to activate the [=DRM system=]; these elements are used merely to provide the default [=DRM system configuration=].
+
+The contents of [=DRM system=] specific `ContentProtection` elements with the same `schemeIdUri` SHALL be identical in all [=adaptation sets=] with the same `default_KID`. This means that a [=DRM system=] will treat equally all [=adaptation sets=] that use the same content key.
+
+Note: If you wish to change the default [=DRM system configuration=] associated with a content key, you must update all the instances where the data is present in the MPD. For live services, this can mean updating the data in multiple [=periods=].
+
+If a DASH client exposes APIs/callbacks to business logic for the purpose of controlling DRM interactions, it SHALL NOT allow these APIs to associate multiple [=DRM system configurations=] for the same [=DRM system=] with the same `default_KID`. Conversely, DASH client APIs SHOULD allow business logic to associate different [=DRM system configurations=] for the same [=DRM system=] with different `default_KIDs`.
+
+### default_KID defines the scope of DRM system interactions ### {#CPS-default_KID}
 
 A DASH client interacts with one or more [=DRM systems=] during playback in order to control the decryption of content. Some of the most important interactions are:
 
 * Determining the availability of content keys.
 * Communicating with the [=DRM system=] to make content keys available for use.
 
-The scope of each of these interactions is defined by the `default_KID`. Each distinct `default_KID` identifies exactly one content key. The impact of this is further outlined in the chapters describing [[#CPS-client-workflows|DASH client DRM workflows]].
+The scope of each of these interactions is defined by the `default_KID`. Each distinct `default_KID` identifies exactly one content key. The impact of this is further outlined in [[#CPS-client-workflows]].
 
-If a DASH client exposes APIs/callbacks to business logic code for the purpose of controlling DRM interactions, it SHALL NOT allow these APIs to associate multiple [=DRM system configurations=] with the same `default_KID`. Conversely, DASH client APIs SHOULD allow business logic to associate different [=DRM system configurations=] with different `default_KIDs`.
-
-When selecting [=adaptation sets=] for playback, a DASH client SHALL determine the required set of content keys based on the `default_KID` values. Upon determining that one or more required content keys (as identified by `default_KID` values) are not available the client SHOULD interact with the [=DRM system=] and request it to make availabe the missing content keys. Clients SHALL explicitly request the DRM system to make available all `default_KIDs` signaled in the MPD and SHALL NOT assume that making one content key from this set available will implicitly make others available.
+When selecting [=adaptation sets=] for playback, a DASH client SHALL determine the required set of content keys based on the `default_KID` values. Upon determining that one or more required content keys (as identified by `default_KID` values) are not available the client SHOULD interact with the [=DRM system=] and request it to make availabe the missing content keys. Clients SHALL explicitly request the [=DRM system=] to make available all `default_KIDs` signaled in the MPD and SHALL NOT assume that making one content key from this set available will implicitly make others available.
 
 The DASH client and/or [=DRM system=] MAY batch license requests for different `default_KIDs` (and the respective responses) into a single transaction (for example, to reduce the chattiness of license acquisition traffic).
 
 Note: This optimization might require support from platform APIs and/or [=DRM system=] specific logic from the DASH client, as a batching mechanism is not yet a standard part of DRM related platform APIs.
 
-#### `default_KID` in hierarchical/derived/variant key scenarios #### {#CPS-default_KID-hierarchy}
+#### default_KID in hierarchical/derived/variant key scenarios #### {#CPS-default_KID-hierarchy}
 
 While it is common that `default_KID` identifies the actual content key used for encryption, a [=DRM system=] MAY make use of other keys in addition to the one signalled by the `default_KID` value but this SHALL be transparent to the client with only the `default_KID` being used in interactions between the DASH client and the [=DRM system=].
 
@@ -170,11 +170,15 @@ While it is common that `default_KID` identifies the actual content key used for
 
 In a hierarchical key scenario, `default_KID` identifies the root-level key, not the leaf-level key used to encrypt media samples, and the handling of leaf keys is not exposed to a DASH client. As far as a DASH client knows, there is always only one content key identified by `default_KID`.
 
+Note: A DASH service with a key hierarchy is sometimes referred to as using "internal key rotation".
+
 This logic applies to all scenarios that make use of additional keys, regardless whether they are based on the key hierarchy, key derivation or variant key concepts. For more information on the background and use cases, see [[#CPS-AdditionalConstraints-PeriodReauth-Implementation]].
 
 ### Delivering updates to DRM system internal state ### {#CPS-mpd-moof-pssh}
 
 Some DRM systems support live updates to DRM system internal state (e.g. to deliver new leaf keys in a key hierarchy). These updates SHALL NOT be present in the MPD and SHALL be delivered as `moof/pssh` boxes in media segments.
+
+These state updates are transparent to the DASH client - the media platform is expected to intercept the `moof/pssh` boxes and supply them directly to the active [=DRM system=].
 
 ## DASH-IF interoperable license request model ## {#CPS-lr-model}
 
@@ -182,7 +186,7 @@ The interactions involved in acquiring licenses and content keys in DRM workflow
 
 Any conformance statements in this chapter apply to clients and services that opt in to using this model (e.g. a "SHALL" statement means "SHALL, if using this model," and has no effect on implementations that choose to use proprietary mechanisms for license acquisition). The authorization service and license server are considered part of the DASH service.
 
-In performing license acquisition, an interoperable DASH client needs to:
+In performing license acquisition, a DASH client needs to:
 
 1. Be able to prove that the user has the right to use the requested content keys.
 1. Handle errors in a manner agnostic to the specific [=DRM system=] and license server being used.
@@ -242,17 +246,17 @@ To obtain an [=authorization token=], a DASH client needs to know the URL of the
 
 If no authorization service URL is provided by the MPD nor made available at runtime, a DASH client SHALL NOT attach an [=authorization token=] to a license request. Absence of this URL implies that authorization operations are performed in a manner transparent to the DASH client (see [[#CPS-lr-model-deployment]]).
 
-DASH clients will use zero or more [=authorization tokens=] depending on the number of authorization service URLs defined for the set of all selected content keys. One [=authorization token=] is requested from each distinct authorization service URL. The authorization service URL is specified individually for each [=DRM system=] and content key (i.e. it is part of the [=DRM system configuration=] data set). Services SHOULD use a single [=authorization token=] covering all content keys and [=DRM systems=] but MAY divide the scope of [=authorization tokens=] if appropriate (e.g. different [=DRM systems=] might use different license server vendors that use mutually incompatible license token formats).
+DASH clients will use zero or more [=authorization tokens=] depending on the number of authorization service URLs defined for the set of content keys in use. One [=authorization token=] is requested from each distinct authorization service URL. The authorization service URL is specified individually for each [=DRM system=] and content key (i.e. it is part of the [=DRM system configuration=]). Services SHOULD use a single [=authorization token=] covering all content keys and [=DRM systems=] but MAY divide the scope of [=authorization tokens=] if appropriate (e.g. different [=DRM systems=] might use different license server vendors that use mutually incompatible license token formats).
 
 Note: Path or query string parameters in the authorization service URL can be used to differentiate between license server implementations (and their respective [=authorization token=] formats).
 
-DASH clients MAY cache and reuse [=authorization tokens=] up to the moment specified in the token's `exp` "Expiration Time" claim (defaulting to "never expires"). DASH clients SHOULD automatically request a new [=authorization token=] if the license server indicates that the [=authorization token=] was rejected (for any reason), even if the "Expiration Time" claim is not present or does not indicate expiration (see [[#CPS-lr-model-errors]]).
+DASH clients SHOULD cache and reuse [=authorization tokens=] up to the moment specified in the token's `exp` "Expiration Time" claim (defaulting to "never expires"). DASH clients SHOULD discard the [=authorization token=] and request a new one if the license server indicates that the [=authorization token=] was rejected (for any reason), even if the "Expiration Time" claim is not present or the expiration time is in the future (see [[#CPS-lr-model-errors]]).
 
-Before requesting an [=authorization token=], a DASH client SHALL take the authorization service URL and add or replace the `kids` query string parameter containing a comma-separated list of `default_KID` values obtained from the MPD. This list SHALL contain every `default_KID` for which proof of authorization is requested from this authorization service (i.e. every distinct `default_KID` for which the same URL was specified in `dashif:authzurl`). This modified URL, containing the `kids` query string parameter, will be used for the [=authorization token=] request.
+Before requesting an [=authorization token=], a DASH client SHALL take the authorization service URL and add or replace the `kids` query string parameter containing a comma-separated list of `default_KID` values obtained from the MPD. This list SHALL contain every `default_KID` for which proof of authorization is requested from this authorization service (i.e. every distinct `default_KID` for which the same URL was specified in `dashif:authzurl`).
 
-To request an [=authorization token=], a DASH client SHALL make an HTTP GET request to this URL, attaching to the request any standard contextual information used by the underlying platform and allowed by active security policy (e.g. any active HTTP cookies). This data can be used by the authorization service to identify the user and assess the rights of the user.
+To request an [=authorization token=], a DASH client SHALL make an HTTP GET request to this modified URL, attaching to the request any standard contextual information used by the underlying platform and allowed by active security policy (e.g. HTTP cookies). This data can be used by the authorization service to identify the user and assess their access rights.
 
-Note: For DASH clients operating on a web browser platform, effective use of the authorization service may require the authorization service to exist on the same origin as the website hosting the DASH client in order to permit session cookies to be used.
+Note: For DASH clients operating on the web platform, effective use of the authorization service may require the authorization service to exist on the same origin as the website hosting the DASH client in order to share the session cookies.
 
 If the HTTP response status code indicates a successful result and `Content-Type: text/plain`, the HTTP response body is the authorization token.
 
@@ -317,7 +321,7 @@ An authorization service SHALL NOT issue [=authorization tokens=] that authorize
 
 Note: During license issuance, the license server may further constrain the set of available content keys (e.g. as a result of examining the device's security level). See [[#CPS-unavailable-keys]].
 
-[=Authorization tokens=] SHALL be returned by an authorization service using [[!rfc7515|JWS Compact Serialization]] (the `aaa.bbb.ccc` format). The serialized form of an [=authorization token=] SHOULD NOT exceed 5000 bytes to ensure that a license server does not reject a license request carrying the token due to excessive header size.
+[=Authorization tokens=] SHALL be returned by an authorization service using [[!rfc7515|JWS Compact Serialization]] (the `aaa.bbb.ccc` format). The serialized form of an [=authorization token=] SHOULD NOT exceed 5000 characters to ensure that a license server does not reject a license request carrying the token due to excessive HTTP header size.
 
 #### Attaching authorization tokens to license requests #### {#CPS-lr-model-authz-using}
 
@@ -334,7 +338,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6IjE1MTYyMzkwMj
 </xmp>
 </div>
 
-The same [=authorization token=] may be used with multiple license requests but one license request can only carry one [=authorization token=], even if the license request is for multiple content keys.
+The same [=authorization token=] may be used with multiple license requests but one license request can only carry one [=authorization token=], even if the license request is for multiple content keys. A DASH client SHALL NOT use content key batching features offered by the platform APIs to combine requests for content keys that require the use of separate [=authorization tokens=].
 
 A DASH client SHALL NOT make license requests for content keys that are configured as requiring an [=authorization token=] (e.g. by the presence of `dashif:authzurl` in the MPD) but for which the DASH client has failed to acquire an [=authorization token=].
 
@@ -363,11 +367,13 @@ Content-Type: application/problem+json
 </xmp>
 </div>
 
-A problem record SHALL contain a short human-readable description of the problem in the `title` field and SHOULD contain a human-readable description of the recommended steps to solve the problem in the `detail` field.
+A problem record SHALL contain a short human-readable description of the problem in the `title` field and SHOULD contain a human-readable description, designed to help the reader solve the problem, in the `detail` field.
 
 Note: The `detail` field is intended to be displayed to users of a DASH client, not to developers. The description should be helpful to the user whose device the DASH client is running on.
 
-During DRM system activation, it is possible that multiple failures occur. DASH clients SHOULD be capable of displaying a list of error messages to the end-user and SHOULD deduplicate multiple records of the same type (e.g. if an authorization token expires, this expiration may cause failures when requesting 5 content keys but should result in at most 1 error message being displayed).
+During [[#CPS-activation-workflow|DRM system activation]], it is possible that multiple failures occur. DASH clients SHOULD be capable of displaying a list of error messages to the end-user and SHOULD deduplicate multiple records with the same `type` (e.g. if an [=authorization token=] expires, this expiration may cause failures when requesting 5 content keys but should result in at most 1 error message being displayed).
+
+Note: Merely the fact that a problem record was returned does not mean that it needs to be presented to the user or acted upon in other ways. The user may still experience successful playback in the presence of some failed requests. See [[#CPS-unavailable-keys]].
 
 This chapter defines a set of standard problem types that SHOULD be used to indicate the nature of the failure. Implementations MAY extend this set with further problem types if the nature of the failure does not fit into the existing types.
 
@@ -389,7 +395,7 @@ The authorization service MAY supply a `href` (string) field on the problem reco
 
 #### Problem type: insufficient proof of authorization #### {#CPS-lr-model-errortype-must-supply-usable-authorization-token}
 
-Type: `https://dashif.org/drm-problems/must-supply-usable-authorization-token`
+Type: `https://dashif.org/drm-problems/insufficient-proof-of-authorization`
 
 Title: Not authorized
 
@@ -399,7 +405,7 @@ Used by: license server
 
 This problem record SHOULD be returned by a license server if the proof of authorization (if any) attached to a license request is not sufficient to authorize the use of any of the requested content keys. The `detail` field SHOULD explain what exactly was the expectation the caller failed to satisfy (e.g. no token provided, token has expired, token is for disabled tenant).
 
-Note: If the authorization token authorizes only a subset of requested keys, a license server should not signal a problem and simply return only the authorized subset.
+Note: If the authorization token authorizes only a subset of requested keys, a license server does not signal a problem and simply returns only the authorized subset of content keys.
 
 When encountering this problem, a DASH client SHOULD discard whatever authorization token was used, acquire a new [=authorization token=] and retry the license request. If no authorization service URL is available, this indicates a DASH service or client misconfiguration (as clearly, an [=authorization token=] was expected) and the problem SHOULD be escalated for operator attention.
 
@@ -407,7 +413,7 @@ When encountering this problem, a DASH client SHOULD discard whatever authorizat
 
 The interoperable license request model is designed to allow for the use of different deployment architectures in common use today, including those where authorization duties are offloaded to a "license proxy". This chapter outlines some of the possible architectures and how interoperable DASH clients support them.
 
-The baseline architecture assumes that a separate (largely DRM system agnostic) authorization service exists, implementing the logic required to determine which users have the rights to access which content.
+The baseline architecture assumes that a separate (largely [=DRM system=] agnostic) authorization service exists, implementing the logic required to determine which users have the rights to access which content.
 
 <figure>
 	<img src="Diagrams/Security/LicenseRequestModel-BaselineArchitecture.png" />
@@ -441,7 +447,7 @@ No standard mechanism of embedding the content ID is defined, as a content ID is
 Having embedded the content ID in the URL, all DRM workflows continue to operate the same as they normally would, except now they also include knowledge of the content ID in each request to the authorization service and/or license server.
 
 <div class="example">
-Example DRM system configuration with the content ID embedded in the authorization service and license server URLs. Each service may use a different implementation-defined URL structure for carrying the content ID.
+[=DRM system configuration=] with the content ID embedded in the authorization service and license server URLs. Each service may use a different implementation-defined URL structure for carrying the content ID.
 
 <xmp highlight="xml">
 <ContentProtection
@@ -454,7 +460,7 @@ Example DRM system configuration with the content ID embedded in the authorizati
 </xmp>
 </div>
 
-Advisement: The content ID SHOULD NOT be embedded in DRM system specific data structures such as `pssh` boxes, as logic that depends on DRM system specific data structures is not interoperable and often leads to increased development and maintenance costs.
+The content ID SHOULD NOT be embedded in DRM system specific data structures such as `pssh` boxes, as logic that depends on DRM system specific data structures is not interoperable and often leads to increased development and maintenance costs.
 
 ## DRM workflows in DASH clients ## {#CPS-client-workflows}
 
@@ -464,11 +470,13 @@ To present encrypted content a DASH client needs to:
 1. [[#CPS-activation-workflow|Activate the selected DRM system and configure it to decrypt content.]]
     * During activation, [[#CPS-license-request-workflow|acquire any missing content keys and the licenses that govern their use]].
 
+A client also needs to take observations at runtime to detect the need for different content keys to be used (e.g. in live services that change the content keys periodically) and to detect content keys becoming unavailable (e.g. due to expiration of access rights).
+
 This chapter defines the recommended DASH client workflows for interacting with DRM systems in these aspects. It is assumed that the platform implements an API similar to [[encrypted-media|W3C Encrypted Media Extensions (EME)]].
 
 ### Selecting the DRM system ### {#CPS-selection-workflow}
 
-The MPD describes how content is encrypted, with the `default_KID` values identifying the content keys required for playback, and optionally provides the default DRM system configuration together with a list of candidate DRM systems in the form of `ContentProtection` descriptors.
+The MPD describes how content is encrypted, with the `default_KID` values identifying the content keys required for playback, and optionally provides the default [=DRM system configuration=] for one or more [=DRM systems=] via `ContentProtection` descriptors.
 
 <div class="example">
 An adaptation set encrypted with a key identified by `34e5db32-8625-47cd-ba06-68fca0655a72` using the `cenc` encryption scheme.
@@ -483,112 +491,116 @@ An adaptation set encrypted with a key identified by `34e5db32-8625-47cd-ba06-68
         schemeIdUri="urn:uuid:d0ee2730-09b5-459f-8452-200e52b37567"
         value="FirstDrm 2.0">
         <cenc:pssh>YmFzZTY0IGVuY29kZWQgY29udGVudHMgb2YgkXBzc2iSIGJveCB3aXRoIHRoaXMgU3lzdGVtSUQ=</cenc:pssh>
-        <dashif:authzurl>https://example.com/tenants/5341/authorize?mode=acme</dashif:authzurl>
+        <dashif:authzurl>https://example.com/tenants/5341/authorize?mode=firstDRM</dashif:authzurl>
         <dashif:laurl>https://example.com/AcquireLicense</dashif:laurl>
     </ContentProtection>
     <ContentProtection
         schemeIdUri="urn:uuid:eb3841cf-d7e4-4ec4-a3c5-a8b7f9f4f55b"
         value="SecondDrm 8.0">
         <cenc:pssh>ZXQgb2YgcGxheWFibGUgYWRhcHRhdGlvbiBzZXRzIG1heSBjaGFuZ2Ugb3ZlciB0aW1lIChlLmcuIGR1ZSB0byBsaWNlbnNlIGV4cGlyYXRpb24gb3IgZHVl</cenc:pssh>
-        <dashif:authzurl>https://example.com/tenants/5341/authorize?mode=emca</dashif:authzurl>
+        <dashif:authzurl>https://example.com/tenants/5341/authorize?mode=secondDRM</dashif:authzurl>
     </ContentProtection>
 </AdaptationSet>
 </xmp>
 
-The MPD signals that there are two DRM systems that should by default be considered candidates for activation:
+The MPD provides [=DRM system configuration=] for [=DRM systems=]:
 
-* FirstDRM contains a full configuration data set, including the optional `dashif:authzurl`.
-* SecondDRM is more sparse, requiring the DASH client to provide the license server URL at runtime (and, [[#CPS-lr-model-authz|if proof of authorization is needed by the license server]], the authorization service URL).
+* For `FirstDRM`, the MPD provides complete [=DRM system configuration=], including the optional `dashif:authzurl`.
+* For `SecondDRM`, the MPD does not provide the license server URL, which must be supplied at runtime.
 
 </div>
 
-Note: Neither an initialization segment nor a media segment is required to select a DRM system. The MPD is the only component of the presentation used for DRM system selection.
+Note: Neither an [=initialization segment=] nor a [=media segment=] is required to select a [=DRM system=]. The MPD is the only component of the presentation used for [=DRM system=] selection.
 
-In addition to the MPD, a DASH client can also execute custom business logic for controlling DRM selection and configuration decisions (e.g. loading license server URLs from configuration data instead of the MPD). This is often implemented in the form of callbacks exposed by the DASH client to an "app" layer in which the client is hosted. It is assumed that when executing any such callbacks, a DASH client attaches relevant contextual data in addition to the parameters specified here, allowing the business logic to make fully informed decisions.
+In addition to the MPD, a DASH client can also execute custom business logic for controlling DRM selection and configuration decisions (e.g. loading license server URLs from configuration data instead of the MPD). This is often implemented in the form of callbacks exposed by the DASH client to an "app" layer in which the client is hosted. It is assumed that when executing any such callbacks, a DASH client makes available relevant contextual data, allowing the business logic to make fully informed decisions.
 
-The purpose of the DRM system selection workflow is to select a single DRM system that is capable of decrypting the [=adaptation sets=] selected for playback. The selected DRM system is one that is actually implemented by the media platform and for which the required set of configuration data exists.
+The purpose of the [=DRM system=] selection workflow is to select a single [=DRM system=] that is capable of decrypting the [=adaptation sets=] selected for playback. The selected [=DRM system=] will be one that is actually implemented by the media platform and for which a [=DRM system configuration=] exists for at least one content key.
 
-Note: The set of [=adaptation sets=] considered here need not be constrained to a single [=period=], potentially enabling seamless transitions to a new [=period=] with a different set of content keys (if supported by the platform API).
+Note: It may be that the selected [=DRM system=] is only able to decrypt a subset of the encrypted [=adaptation sets=] selected for playback. See also [[#CPS-unavailable-keys]].
 
-When encrypted [=adaptation sets=] are initially selected for playback or when the set of encrypted [=adaptation sets=] selected for playback changes, a DASH client SHOULD execute the following algorithm for DRM system selection:
+The set of [=adaptation sets=] considered need not be constrained to a single [=period=], potentially enabling seamless transitions to a new [=period=] with a different set of content keys.
+
+When encrypted [=adaptation sets=] are initially selected for playback or when the set of encrypted [=adaptation sets=] selected for playback changes, a DASH client SHOULD execute the following algorithm for [=DRM system=] selection:
 
 <div algorithm="drm-selection">
 
 1. Let <var>adaptation_sets</var> be the set of encrypted [=adaptation sets=] selected for playback.
 1. Ley <var>default_kids</var> be the set of all distinct `default_KID` values of <var>adaptation_sets</var>.
-1. Ley <var>default_kid_schemes</var> be a map of `default_KID -> string`, with the map keys being <var>default_kids</var> and the map values being the Common Encryption schemes signaled by `@value` on the `ContentProtection` descriptors with `@schemeIdUri="urn:mpeg:dash:mp4protection:2011"` for each `default_KID`.
-1. Let <var>signaled_system_ids</var> be the set of DRM system IDs for which a `ContentProtection` element is present in the MPD on all entries in <var>adaptation_sets</var>.
+1. Ley <var>default_kid_schemes</var> be a map of `default_KID -> string`, with the map keys being <var>default_kids</var> and the map values being the [=protection scheme=] signaled for each `default_KID`.
+1. Let <var>signaled_system_ids</var> be the set of DRM system IDs for which a `ContentProtection` element is present in the MPD on any entries in <var>adaptation_sets</var>.
 1. Provide <var>signaled_system_ids</var> to the business logic component and have it return the desired DRM systems as an **ordered** list <var>desired_system_ids</var>.
     * This enables business logic to establish an order of preference where multiple DRM systems are present. This document does not define any default ordering.
-    * This enables business logic to filter our DRM systems known to be unsuitable.
+    * This enables business logic to filter out DRM systems known to be unsuitable.
     * This enables business logic to indicate DRM systems not signaled in the MPD.
 1. Remove from <var>desired_system_ids</var> any DRM systems that are not supported by the platform.
 1. For each <var>system_id</var> in <var>desired_system_ids</var>:
-    1. Let <var>supported_default_kids</var> be the values from <var>default_kids</var> for which the DRM system indicates that it supports the Common Encryption scheme indicated for this value by <var>default_kid_schemes</var>.
-    1. Let <var>configurations</var> be a map where the map keys are <var>supported_default_kids</var> and the map values are the `ContentProtection` elements from the MPD that match the key and the <var>system_id</var>.
-        * If there is no matching `ContentProtection` element in the MPD, the map still contains the entry with an empty value, indicating to business logic executed in the next step that it should provide the value.
-        * Enhance the MPD-provided default configuration data with synthesized data where appropriate (e.g. [[#CPS-AdditionalConstraints-W3C|to generate W3C Clear Key initialization data in a format supported by the platform API]]).
+    1. Let <var>supported_default_kids</var> be the values from <var>default_kids</var> for which the [=DRM system=] indicates that it supports the [=protection scheme=] indicated by <var>default_kid_schemes</var>.
+    1. Let <var>configurations</var> be a map where the map keys are <var>supported_default_kids</var> and the map values are the [=DRM system configurations=] initialized with data from `ContentProtection` elements in the MPD (matching on `default_KID` and <var>system_id</var>).
+        * If there is no matching [=DRM system=] specific `ContentProtection` element in the MPD, the map still contains a partially initialized [=DRM system configuration=].
+        * Enhance the MPD-provided default [=DRM system configuration=] with synthesized data where appropriate (e.g. [[#CPS-AdditionalConstraints-W3C|to generate W3C Clear Key initialization data in a format supported by the platform API]]).
     1. Provide <var>configurations</var> to the business logic component for inspection and modification.
-        * This enables business logic to override the default DRM system configuration.
-        * This enables business logic to inject DRM system configuration if it was not embedded in the MPD.
-        * This enables business logic to reject content keys that it knows cannot be used.
-    1. Remove any entries with empty values from <var>configurations</var>.
+        * This enables business logic to override the default [=DRM system configuration=] provided by the MPD.
+        * This enables business logic to inject values that were not embedded in the MPD.
+        * This enables business logic to reject content keys that it knows cannot be used, by removing the [=DRM system configuration=] for them.
+    1. Remove any entries from <var>configurations</var> that contain insufficient data for successful [=DRM system=] activation.
     1. If at least one entry remains in <var>configurations</var>:
-        1. Execute the DRM system activation workflow on the selected DRM system, providing <var>configurations</var> as input.
+        1. Execute the [[#CPS-activation-workflow|DRM system activation workflow]] on the selected [=DRM system=], providing <var>configurations</var> as input.
         1. Exit this algorithm.
-    1. Continue loop to process next DRM system.
-1. If this point is reached, no DRM system was selected and playback of encrypted content is not possible.
+    1. Continue loop to process next [=DRM system=].
+1. If this point is reached, no [=DRM system=] was selected and playback of encrypted content is not possible.
 
 </div>
 
-In short, take the list of platform-supported DRM systems, in the order specified by custom business logic, and select for activation the first DRM system for which you have configuration data for at least one content key, filtering out content keys used with unsupported Common Encryption schemes.
+In short, take the list of platform-supported [=DRM systems=], in the order specified by custom business logic, and select for activation the first [=DRM system=] for which you have [=DRM system configuration=] for at least one content key, filtering out content keys used with unsupported [=protection schemes=].
 
-Advisement: To determine the supported protection schemes, clients in browsers must assume what the CDM supports as there is no standardized API for probing the platform to determine which Common Encryption proteciton scheme is supported. A bug is open on W3C EME and [a pull request exists](https://github.com/w3c/encrypted-media/pull/392) for the ISOBMFF file format bytestream.
+Advisement: To determine the supported [=protection schemes=], clients in browsers must assume what the CDM supports as there is no standardized API for probing the platform to determine which [=protection scheme=] is supported. A bug is open on W3C EME and [a pull request exists](https://github.com/w3c/encrypted-media/pull/392) for the ISOBMFF file format bytestream.
 
-If a DRM system is successfully selected, activation and potentially one or more license requests will follow before playback can proceed. These related workflows are described in the next chapters.
+If a [=DRM system=] is successfully selected, activation and potentially one or more license requests will follow before playback can proceed. These related workflows are described in the next chapters.
 
 ### Activating the DRM system ### {#CPS-activation-workflow}
 
-Once a suitable DRM system has been selected, it must be activated by providing it a list of content keys that the DASH client requests to be made available for content decryption, together with DRM system specific configuration data for each of the content keys. The result of activation is a DRM system that is ready to decrypt all encrypted [=adaptation sets=] selected for playback.
+Once a suitable [=DRM system=] has been selected, it must be activated by providing it a list of content keys that the DASH client requests to be made available for content decryption, together [=DRM system=] specific initialization data for each of the content keys. The result of activation is a [=DRM system=] that is ready to decrypt zero or more encrypted [=adaptation sets=] selected for playback.
 
-During activation, it may be necessary [[#CPS-license-request-workflow|to perform license requests]] in order to obtain some or all of the content keys. Some of the requested content keys may already be available to the DRM system, in which case no license request will be triggered.
+During activation, it may be necessary [[#CPS-license-request-workflow|to perform license requests]] in order to obtain some or all of the content keys and the usage policy that constrains their use. Some of the requested content keys may already be available to the [=DRM system=], in which case no license request will be triggered.
 
-Note: The details of stored content key management and persistent DRM system session management are out of scope of this document - workflows described here simply accept the fact that some content keys may already be available, regardless of why that is the case or what operations are required to establish content key persistence.
+Note: The details of stored content key management and persistent DRM session management are out of scope of this document - workflows described here simply accept the fact that some content keys may already be available, regardless of why that is the case or what operations are required to establish content key persistence.
 
-Once a suitable DRM system [[#CPS-selection-workflow|has been selected]], a DASH client SHOULD execute the following algorithm to activate it:
+Once a suitable [=DRM system=] [[#CPS-selection-workflow|has been selected]], a DASH client SHOULD execute the following algorithm to activate it:
 
 <div algorithm="drm-activation">
 
-1. Let <var>configurations</var> be the input to the algorithm; it is a map with the entry keys being `default_KID` values identifying the content keys and the entry values being the DRM system configuration data to use for that particular content key.
+1. Let <var>configurations</var> be the input to the algorithm; it is a map with the entry keys being `default_KID` values identifying the content keys and the entry values being the [=DRM system configuration=] to use with that particular content key.
 1. Let <var>pending_license_requests</var> be an empty set.
-1. For each <var>kid</var> and <var>config</var> pair in <var>configurations</var> invoke the platform API to activate the selected DRM system and signal it to make <var>kid</var> available for decryption, passing the DRM system any relevant configuration data stored in <var>config</var> (e.g. the `pssh` box).
-    * If the DRM system indicates that one or more license requests are needed, add any license request data provided by the DRM system and/or platform API to <var>pending_license_requests</var>, together with the associated <var>kid</var> and <var>config</var> values.
+1. For each <var>kid</var> and <var>config</var> pair in <var>configurations</var> invoke the platform API to activate the selected DRM system and signal it to make <var>kid</var> available for decryption, passing the [=DRM system=] the initialization data stored in <var>config</var>.
+    * If the [=DRM system=] indicates that one or more license requests are needed, add any license request data provided by the [=DRM system=] and/or platform API to <var>pending_license_requests</var>, together with the associated <var>kid</var> and <var>config</var> values.
 1. If <var>pending_license_requests</var> is not an empty set, execute the [[#CPS-license-request-workflow|license request workflow]] and provide this set as input to the algorithm.
-1. Inspect the set of content keys the DRM system indicates are now available and deselect from playback any [=adaptation sets=] for which the content key has not become available.
+1. Inspect the set of content keys the [=DRM system=] indicates are now available and deselect from playback any [=adaptation sets=] for which the content key has not become available.
 1. Inspect the set of remaining [=adaptation sets=] to determine if a sufficient data set remains for successful playback. Raise error if playback cannot continue.
 
 </div>
 
-For historical reasons, platform APIs often implement DRM system activation as a per-content-key operation. Some APIs and DRM system implementations may also support batching all the content keys into a single activation operation, for example by combining multiple "content key and DRM system configuration" data sets into a single data set in a single API call. DASH clients MAY make use of such batching where supported by the platform API. The workflow in this chapter describes the most basic scenario where activation must be performed separately for each content key.
+The default format for initialization data supplied to a [=DRM system=] is a `pssh` box. However, if the DASH client has knowledge of any special initialization requirements of a particular [=DRM system=], it MAY supply initialization data in other formats (e.g. the `keyids` JSON structure used by W3C Clear Key). Presence of initialization data in the expected format SHOULD be considered during [[#CPS-selection-workflow|DRM system selection]].
+
+For historical reasons, platform APIs often implement [=DRM system=] activation as a per-content-key operation. Some APIs and [=DRM system=] implementations may also support batching all the content keys into a single activation operation, for example by combining multiple "content key and DRM system configuration" data sets into a single data set in a single API call. DASH clients MAY make use of such batching where supported by the platform API. The workflow in this chapter describes the most basic scenario where activation must be performed separately for each content key.
 
 Note: The batching may, for example, be accomplished by concatenating all the `pssh` boxes for the different content keys. Support for this type of batching among DRM systems and platform APIs remains uncommon, despite the potential efficiency gains from reducing the number of license requests triggered.
 
 #### Handling unavailability of content keys #### {#CPS-unavailable-keys}
 
-It is possible that not all of the encrypted [=adaptation sets=] selected for playback can actually be played back (e.g. because a content key for ultra-HD content is only authorized for use on high-security devices). The unavailability of one or more content keys SHOULD NOT be considered a fatal error condition as long as at least one audio and at least one video [=adaptation set=] remains available for playback (assuming both content types are selected for playback to begin with). This logic MAY be overridden by solution specific business logic to better reflect end-user expectations under given conditions.
+It is possible that not all of the encrypted [=adaptation sets=] selected for playback can actually be played back (e.g. because a content key for ultra-HD content is only authorized for use on high-security devices). The unavailability of one or more content keys SHOULD NOT be considered a fatal error condition as long as at least one audio and at least one video [=adaptation set=] remains available for playback (assuming both content types are initially selected for playback). This logic MAY be overridden by solution specific business logic to better reflect end-user expectations.
 
-The set of available content keys can change over time (e.g. due to license expiration or due to new [=periods=] in the presentation requiring different content keys). A DASH client SHALL monitor the set of `default_KID` values that are required for playback and either request the DRM system to make these content keys available or deselect the affected [=adaptation sets=] when the content keys become unavailable. Conceptually, any such change can be handled by re-executing the [[#CPS-selection-workflow|DRM system selection]] and [[#CPS-activation-workflow|activation workflows]], although platform APIs may also offer more fine-grained update capabilities.
+The set of available content keys can change over time (e.g. due to license expiration or due to new [=periods=] in the presentation requiring different content keys). A DASH client SHALL monitor the set of `default_KID` values that are required for playback and either request the [=DRM system=] to make these content keys available or deselect the affected [=adaptation sets=] when the content keys become unavailable. Conceptually, any such change can be handled by re-executing the [[#CPS-selection-workflow|DRM system selection]] and [[#CPS-activation-workflow|activation workflows]], although platform APIs may also offer more fine-grained update capabilities.
 
-A DASH client can request a DRM system to decrypt any set of content keys (if it has the necessary [=DRM system configuration=]). However, this is only a request and it can be denied at multiple stages of processing by different involved entities.
+A DASH client can request a [=DRM system=] to enable decryption using any set of content keys (if it has the necessary [=DRM system configuration=]). However, this is only a request and playback can be countermanded at multiple stages of processing by different involved entities.
 
 <figure>
 	<img src="Diagrams/Security/ReductionOfKeys.png" />
 	<figcaption>The set of content keys made available for use can be far smaller than the set requested by a DASH client. Example workflow indicating potential instances of content keys being removed from scope.</figcaption>
 </figure>
 
-Common platform media APIs will refuse to start playback if the DRM system does not make available the content keys for all the buffered data. The set of available content keys is only known at the end of executing the DRM system activation workflow and may decrease over time (e.g. due to license expiration).
+Advisement: Platform media APIs often refuse to start playback if the [=DRM system=] is not able to decrypt all the data already in media platform buffers.
 
-The proper handling of unavailable keys depends on the limitations imposed by the platform APIs. It may be appropriate for a DASH client to avoid buffering data for encrypted [=adaptation sets=] until the required content key is known to be available. This allows the client to avoid potentially expensive buffer resets and rebuffering if unusable data needs to be removed from buffers.
+The set of available content keys is only known at the end of executing the activation workflow and may decrease over time (e.g. due to license expiration). The proper handling of unavailable keys depends on the limitations imposed by the platform APIs. It may be appropriate for a DASH client to avoid buffering data for encrypted [=adaptation sets=] until the required content key is known to be available. This allows the client to avoid potentially expensive buffer resets and rebuffering if unusable data needs to be removed from buffers.
 
 Note: The DASH client should still download the data into intermediate buffers for faster startup and simply defer submitting it to the platform media API until key availability is confirmed.
 
@@ -600,62 +612,72 @@ Issue: EME has no good way to trigger a license request if the key is still avai
 
 DASH clients performing license requests SHOULD follow the [[#CPS-lr-model|DASH-IF interoperable license request model]]. The remainder of this chapter only applies to DASH clients that follow this model. Alternative implementations are possible and in common use but are not interoperable and are not described in this document.
 
-DRM systems generally do not perform license requests on their own. Rather, when they determine that a license is required, they generate a document that serves as the license request body and expect the DASH client to deliver it to a license server for processing. The latter returns a suitable response that, if a license is granted, encapsulates the content keys in an encrypted form only readable to the DRM system.
+[=DRM systems=] generally do not perform license requests on their own. Rather, when they determine that a license is required, they generate a document that serves as the license request body and expect the DASH client to deliver it to a license server for processing. The latter returns a suitable response that, if a license is granted, encapsulates the content keys in an encrypted form only readable to the DRM system.
 
 <figure>
 	<img src="Diagrams/Security/LicenseRequestConcept.png" />
 	<figcaption>Simplified conceptual model of license request processing. Many details omitted.</figcaption>
 </figure>
 
-The request and response body are in DRM system specific formats and considered opaque to the DASH client. A DASH client SHALL NOT modify the request body or the response body.
+The request and response body are in [=DRM system=] specific formats and considered opaque to the DASH client. A DASH client SHALL NOT modify the request body or the response body.
 
-The license request workflow defined here exists to enable the following common business logic needs to be achieved without the need to customize the DASH client with logic specific to a DRM system or license server implementation:
+The license request workflow defined here exists to enable the following goals to be achieved without the need to customize the DASH client with logic specific to a [=DRM system=] or license server implementation:
 
 1. Provide proof of authorization if the license server requires the DASH client to prove that the user being served has the rights to use the requested content keys.
 1. Execute the license request workflow driven purely by the MPD, without any need for project-specific customization of the DASH client logic.
 1. Detect common error scenarios and present an understandable message to the user.
 
-The proof of authorization is optional and the need to attach it to a license request is indicated by the presence of `dashif:authzurl` in the `ContentProtection` descriptor (potentially supplied by business logic instead of the MPD). The proof of authorization is a [[!jwt|JSON Web Token]] in compact encoding (the `aaa.bbb.ccc` form) returned as the HTTP response body when the DASH client performs a GET request to this URL. The token is attached to a license request in the HTTP `Authorization` header with the `Bearer` type.
+The proof of authorization is optional and the need to attach it to a license request is indicated by the presence of `dashif:authzurl` in the [=DRM system configuration=]. The proof of authorization is a [[!jwt|JSON Web Token]] in compact encoding (the `aaa.bbb.ccc` form) returned as the HTTP response body when the DASH client performs a GET request to this URL. The token is attached to a license request in the HTTP `Authorization` header with the `Bearer` type. For details, see [[#CPS-lr-model]].
 
 Error responses from both the authorization service and the license server SHOULD be returned as [[rfc7807]] compatible responses with a 4xx status code and `Content-Type: application/problem+json`.
 
-To process license requests queued during execution of the DRM system activation workflow, the client SHOULD execute the following algorithm:
+DASH clients SHOULD implement retry behavior to recover from transient failures and expiration of [=authorization tokens=].
+
+To process license requests queued during execution of the [[#CPS-activation-workflow|DRM system activation workflow]], the client SHOULD execute the following algorithm:
 
 <div algorithm="drm-license-acquisition">
 
-1. Let <var>pending_license_requests</var> be the set of license requests that the DRM system has requested to be performed, with at least the following data present in each entry:
-    * The license request body provided by the DRM system.
-    * The `default_KID` associated with the license request.
-    * The DRM system configuration data (`ContentProtetion` descriptor) associated with the `default_KID` (as potentially modified/overridden by business logic during DRM system selection workflow).
+1. Let <var>pending_license_requests</var> be the set of license requests that the [=DRM system=] has requested to be performed, with at least the following data present in each entry:
+    * The license request body provided by the [=DRM system=].
+    * The [=DRM system configuration=].
+1. Let <var>retry_requests</var> be an empty set. It will contain the set of license requests that are to be retried due to transient failure.
 1. Let <var>pending_authz_requests</var> be a map of `URL -> GUID[]`, with the keys being authorization service URLs and the values being lists of `default_KIDs`. The map is initially empty.
 1. For each <var>request</var> in <var>pending_license_requests</var>:
-    1. If the DRM system configuration data associated with <var>request</var> does not contain a value for the `dashif:authzurl` element, skip to the next loop iteration.
-    1. Create/update the entry in <var>pending_authz_requests</var> with the key being the `dashif:authzurl` value and add the `default_KID` of <var>request</var>.
-1. Let <var>authz_tokens</var> be a map of `GUID -> string`, with the keys being `default_KIDs` and the values being the associated authorization tokens. The map is initially empty.
+    1. If the [=DRM system configuration=] does not contain a value for `dashif:authzurl`, skip to the next loop iteration.
+    1. Create/update the entry in <var>pending_authz_requests</var> with the key being the `dashif:authzurl` value; add the `default_KID` to the list in the map entry value.
+1. Let <var>authz_tokens</var> be a map of `GUID -> string`, with the keys being `default_KIDs` and the values being the associated [=authorization tokens=]. The map is initially empty.
 1. For each <var>authz_url</var> and <var>kids</var> pair in <var>pending_authz_requests</var>:
-    1. Create a comma-separated list from <var>kids</var>.
+    1. Create a comma-separated list from <var>kids</var> in ascending alphanumeric order.
     1. Let <var>authz_url_with_kids</var> be <var>authz_url</var> with an additional query string parameter named `kids` with the value from <var>kids</var>.
         * <var>authz_url</var> may already incldue query string parameters, which should be preserved!
-    1. Perform an HTTP GET request to <var>authz_url_with_kids</var> (following redirects).
-        * Include any relevant session cookies, if present.
-        * Custom business logic may provide additional HTTP request headers to enable user identification.
-    1. If the response status code indicates failure, make a note of any error information for later processing and skip to the next loop iteration.
-        * Authorization services should return `Content-Type: application/problem+json` and an [[rfc7807]] compatible response body in case of failure, potentially enabling user-friendly error processing. However, this is not a strict requirement and other types of errors may also be returned.
-    1. For each <var>kid</var> in <var>kids</var>, add an entry to <var>authz_tokens</var> with the key <var>kid</var> and the value being the HTTP response body.
+    1. If the DASH client does has a cached [=authorization token=] previously acquired from <var>authz_url_with_kids</var> that still remains valid:
+        1. Let <var>authz_token</var> be the cached [=authorization token=].
+    1. Else:
+        1. Perform an HTTP GET request to <var>authz_url_with_kids</var> (following redirects).
+            * Include any relevant HTTP cookies.
+            * Allow custom business logic to intercept the request and inspect/modify it as needed (e.g. provide additional HTTP request headers to enable user identification).
+        1. If the response status code [[#CPS-lr-model-errors|indicates failure]], make a note of any error information for later processing and skip to the next <var>authz_url</var>.
+        1. Let <var>authz_token</var> be the HTTP response body.
+        1. Submit <var>authz_token</var> into the DASH client cache, with the cache key being <var>authz_url_with_kids</var> and the expiration being defined by the `exp` "Expiration Time" claim in the [=authorization token=] (defaulting to never expires).
+    1. For each <var>kid</var> in <var>kids</var>, add an entry to <var>authz_tokens</var> with the key <var>kid</var> and the value being <var>authz_token</var>.
 1. For each <var>request</var> in <var>pending_license_requests</var>:
     1. Execute an HTTP POST request with the following parameters:
         * Request body is the license request body from <var>request</var>.
-        * Request URL is `dashif:laurl` from <var>request</var>. This license server URL must have been loaded either directly from the MPD or injected by DASH client or custom business logic during DRM system selection.
+        * Request URL is defined by [=DRM system configuration=].
         * If <var>authz_tokens</var> contains an entry with the key being the `default_KID` from <var>request</var>, add the `Authorization` header with the value being the string `Bearer ` concatenated with the entry value from <var>authz_tokens</var> (e.g. `Bearer aaa.bbb.ccc`).
-    1. If the response status code indicates failure, make a note of any error information for later processing and skip to the next loop iteration.
-        * License servers should return `Content-Type: application/problem+json` and an [[rfc7807]] compatible response body in case of failure, potentially enabling user-friendly error processing. However, this is not a strict requirement and other types of errors may also be returned.
-    1. Supply the HTTP response body to the DRM system for processing.
-        * This may cause the DRM system to trigger additional license requests. Append any triggered request to <var>pending_license_requests</var> and copy the attached data (`default_KID` and similar) from the current entry, processing the additional entry in a future iteration of the same loop.
-        * If the DRM system indicates a failure to process the data, make a note of any error information for later processing and skip to the next loop iteration.
+    1. If the response status code [[#CPS-lr-model-errors|indicates failure]]:
+        1. Expel the used [=authorization token=] (if any) from the DASH client cache to force a new token to be used for any future license requests.
+        1. If the DASH client believes that a retry might succeed (e.g. because the response indicates that the error might be transient or due to an expired [=authorization token=]), add <var>request</var> to <var>retry_requests</var>.
+        1. Make a note of any error information for later processing and presentation to the user.
+        1. Skip to the next loop iteration.
+    1. Supply the HTTP response body to the [=DRM system=] for processing.
+        * This may cause the [=DRM system=] to trigger additional license requests. Append any triggered request to <var>pending_license_requests</var> and copy the [=DRM system configuration=] from the current entry, processing the additional entry in a future iteration of the same loop.
+        * If the [=DRM system=] indicates a failure to process the data, make a note of any error information for later processing and skip to the next loop iteration.
+1. If <var>retry_requests</var> is not empty, re-execute this workflow with <var>retry_requests</var> as the input.
 
 </div>
 
-Note: While the above algorithm is presented sequentially, authorization requests and license requests may be performed in a parallelized manner to minimize processing time.
+While the above algorithm is presented sequentially, authorization requests and license requests may be performed in a parallelized manner to minimize processing time.
 
 At the end of this algorithm, all pending license requests have been performed. However, it is not necessary that all license requests or authorization requests succeed! For example, even if one of the requests needed to obtain an HD quality level content key fails, other requests may still make SD quality level content keys available, leading to a successful playback if the HD quality level is deselected by the DASH client. Individual failing requests therefore do not indicate a fatal error. Rather, such error information should be collected and provided to the top-level error handler of the DRM system activation workflow, which can make use of this data to present user-friendly messages if it decides that meaningful playback cannot take place with the final set of available content keys. See also [[#CPS-unavailable-keys]].
 
