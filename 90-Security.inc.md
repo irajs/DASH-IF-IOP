@@ -240,7 +240,7 @@ The above data sets are serialized and digitally signed to arrive at the final f
 	<figcaption>Role of the authorization service in DRM workflow related communication.</figcaption>
 </figure>
 
-An authorization service SHALL digitally sign any issued [=authorization token=] with an algorithm from the "HMAC with SHA-2 Functions" or "Digital Signature with ECDSA" sets as defined in [[!jwt|the JWT specification]]. The HS256 algorithm is recommended as a highly compatible default, as it is a required part of every JWT implementation. License server implementations SHALL validate the digital signature and reject tokens with invalid signatures or tokens using signature algorithms other than those referenced here.
+An authorization service SHALL digitally sign any issued [=authorization token=] with an algorithm from the "HMAC with SHA-2 Functions" or "Digital Signature with ECDSA" sets as defined in [[!jwt|the JWT specification]]. The HS256 algorithm is recommended as a highly compatible default, as it is a required part of every JWT implementation. License server implementations SHALL validate the digital signature and reject tokens with invalid signatures or tokens using signature algorithms other than those referenced here. The license server MAY further constrain the set of allowed algorithms.
 
 #### Obtaining authorization tokens #### {#CPS-lr-model-authz-requesting}
 
