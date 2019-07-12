@@ -202,9 +202,11 @@ These benefits increase in value with the size of the solution, as they reduce t
 
 An <dfn>authorization token</dfn> is a [[!jwt|JSON Web Token]] used to prove to a license server that the caller has the right to use one or more content keys under certain conditions. Attaching this proof of authorization to a license request is optional, allowing for architectures where a "license proxy" performs authorization checks transparently to the DASH client.
 
-The structure of the [=authorization token=] is defined by the license server implementation, as the [=authorization token=] needs to express implementation-specific license server business logic parameters that cannot be generalized. Note that the [[!jwt]] and [[!rfc7515]] specifications defining the token data structure specify mandatory fields and processing requirements that must be implemented by [=authorization token=] issuers and processors.
+The [=authorization token=] is a JSON Web Token for which [[!jwt]] and [[!rfc7515]] define the basic structural requirements. Beyond the basic requirements defined in the referenced specifications and this document, the license server implementation is what defines the structure (the set of claims) of the [=authorization token=], as the data needs to express implementation-specific license server business logic parameters that cannot be generalized.
 
-An [=authorization token=] is divided into a header and body, though the distinction between the two is effectively irrelevant and merely an artifact of the [[!jwt|JWT specification]] that defines where some general purpose fields are located.
+Note: An [=authorization token=] is divided into a header and body, though the distinction between the two is effectively irrelevant and merely an artifact of the [[!jwt|JWT specification]] that defines where some general purpose fields are located.
+
+Implementations SHALL process claims listed in [[!jwt]] section 4.1 "Registered Claim Names" when they are present (e.g. `exp` Expiration Time and `nbf` Not Before). The presence of these claims in an [=authorization token=] is optional. The `typ` header parameter defined in [[!jwt]] SHOULD NOT be present. The `alg` header parameter defined in [[!rfc7515]] SHALL be present.
 
 <div class="example">
 JWT headers, specifying digital signature algorithm and expiration time (general purpose fields):
